@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  researcher_agent:
+    build: ./researcher_agent
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./researcher_agent:/app
+    environment:
+      - EXA_API_KEY=${EXA_API_KEY}
+      - WANDB_API_KEY=${WANDB_API_KEY}
+
+  orchestrator_agent:
+    build: ./orchestrator_agent
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./orchestrator_agent:/app
+    depends_on:
+      - researcher_agent

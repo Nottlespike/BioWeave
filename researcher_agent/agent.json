@@ -1,0 +1,22 @@
+{
+  "name": "ResearcherAgent",
+  "description": "An agent that specializes in analyzing scientific literature to find data on biological targets.",
+  "skills": [
+    {
+      "name": "ResearchTask",
+      "description": "Executes a research task on a given biological target.",
+      "endpoint": "/v1/tasks",
+      "method": "POST",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "The biological target to research."
+          }
+        },
+        "required": ["target"]
+      }
+    }
+  ]
+}
