@@ -6,4 +6,3 @@ exa-py
 wandb
 google-generativeai
 litellm
-git+https://github.com/modelcontext/mcp-server-python.git

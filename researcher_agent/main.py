@@ -1,16 +1,17 @@
 import os
-import os
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from crewai import Agent, Task, Crew
 from crewai.tools import BaseTool
 from exa_py import Exa
 import wandb
 import litellm
-from mcp_server import MCPServer, tool
 
 # Initialize W&B Weave
 wandb.init(project="BioWeave")
+
+# Initialize FastAPI app
+app = FastAPI()
 
 class ExaSearchTool(BaseTool):
     name: str = "Exa Search"
@@ -30,7 +31,6 @@ class ExaSearchTool(BaseTool):
             f'<Highlight id={idx}>{"".join(eachResult.highlights)}</Highlight>'
             for (idx, eachResult) in enumerate(response.results)
         ])
-
 search_and_get_contents_tool = ExaSearchTool()
 
 # Define the Researcher Agent
@@ -46,19 +46,19 @@ researcher = Agent(
     tools=[search_and_get_contents_tool],
 )
 
-class ResearchParameters(BaseModel):
-    target: str = Field(..., description="The biological target to research.")
+class TaskRequest(BaseModel):
+    target: str
 
-@tool(name="research", description="Performs research on a biological target.", parameters=ResearchParameters)
-async def research(target: str) -> dict:
+@app.post("/v1/tasks")
+async def run_research_task(request: TaskRequest):
     """
     Executes a research task using the CrewAI agent.
     """
     try:
         # Define the research task
         research_task = Task(
-            description=f"Find and analyze scientific literature on the biological target: {target}",
-            expected_output=f"A comprehensive report on {target}, including its function, role in disease, and potential as a drug target.",
+            description=f"Find and analyze scientific literature on the biological target: {request.target}",
+            expected_output=f"A comprehensive report on {request.target}, including its function, role in disease, and potential as a drug target.",
             agent=researcher
         )
 
@@ -71,20 +71,16 @@ async def research(target: str) -> dict:
 
         # Execute the crew's task and get the result
         result = litellm.completion(
-            model="gemini/gemini-1.5-pro",
-            messages=[{"role": "user", "content": f"Find and analyze scientific literature on the biological target: {target}"}],
+            model="gemini/gemini-2.5-pro",
+            messages=[{"role": "user", "content": f"Find and analyze scientific literature on the biological target: {request.target}"}],
             api_key=os.environ.get("GEMINI_API_KEY"),
         )
 
         return {"result": result.choices[0].message.content}
 
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
-# Initialize FastAPI app
-app = FastAPI()
-
-# Create and attach the MCP server
-mcp_server = MCPServer()
-mcp_server.register_tool(research)
-app.mount("/", mcp_server)
+@app.get("/")
+def read_root():
+    return {"message": "Researcher Agent is running"}

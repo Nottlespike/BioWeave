@@ -1,4 +1,3 @@
 fastapi
 uvicorn
 httpx
-git+https://github.com/modelcontext/mcp-client-python.git
