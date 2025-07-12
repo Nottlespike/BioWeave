@@ -8,7 +8,12 @@ services:
     environment:
       - EXA_API_KEY=${EXA_API_KEY}
       - WANDB_API_KEY=${WANDB_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 3s
+      retries: 2
 
   orchestrator_agent:
     build: ./orchestrator_agent
@@ -17,4 +22,5 @@ services:
     volumes:
       - ./orchestrator_agent:/app
     depends_on:
-      - researcher_agent
+      researcher_agent:
+        condition: service_healthy

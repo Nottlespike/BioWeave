@@ -1,39 +1,36 @@
-import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from mcp_client import MCPClient
 
 app = FastAPI()
 
 class DiscoveryRequest(BaseModel):
     target: str
 
-async def send_a2a_request(agent_url: str, task_payload: dict):
-    """
-    Sends a task request to an A2A-compliant agent.
-    """
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(agent_url, json=task_payload, timeout=300.0)
-            response.raise_for_status()
-            return response.json()
-        except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail=f"A2A request failed: {e.response.text}")
-        except httpx.RequestError as e:
-            raise HTTPException(status_code=500, detail=f"A2A request failed: {str(e)}")
-
 @app.post("/initiate_discovery")
 async def initiate_discovery(request: DiscoveryRequest):
     """
-    Receives a user request and delegates it to the Researcher agent.
+    Receives a user request and delegates it to the Researcher agent using MCP.
     """
-    researcher_agent_url = "http://researcher_agent:8000/v1/tasks"
-    task_payload = {"target": request.target}
-
+    researcher_agent_mcp_server = "http://researcher_agent:8000"
+    
     try:
-        result = await send_a2a_request(researcher_agent_url, task_payload)
-        return result
-    except HTTPException as e:
-        raise e
+        async with MCPClient(server_url=researcher_agent_mcp_server) as client:
+            # Discover available tools
+            tools = await client.discover()
+            
+            # Assuming the researcher agent has a 'research' tool
+            research_tool = next((t for t in tools if t.name == "research"), None)
+            
+            if not research_tool:
+                raise HTTPException(status_code=500, detail="Researcher agent does not have a 'research' tool")
+
+            # Execute the task using the discovered tool
+            result = await client.execute(tool_name="research", parameters={"target": request.target})
+            return result
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MCP request failed: {str(e)}")
 
 @app.get("/")
 def read_root():
