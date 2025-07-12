@@ -2,8 +2,10 @@ import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from crewai import Agent, Task, Crew
-from crewai_tools import ExaSearchTool
+from crewai.tools import BaseTool
+from exa_py import Exa
 import wandb
+import litellm
 
 # Initialize W&B Weave
 wandb.init(project="BioWeave")
@@ -11,11 +13,25 @@ wandb.init(project="BioWeave")
 # Initialize FastAPI app
 app = FastAPI()
 
-# Exa API key setup
-os.environ["EXA_API_KEY"] = "your_exa_api_key"  # Replace with your actual key
+class ExaSearchTool(BaseTool):
+    name: str = "Exa Search"
+    description: str = "Searches Exa for the given query and returns the results."
 
-# Define the research tool
-search_tool = ExaSearchTool()
+    def _run(self, query: str) -> str:
+        exa = Exa(api_key=os.environ.get("EXA_API_KEY"))
+        response = exa.search_and_contents(
+            query,
+            type="neural",
+            num_results=3,
+            highlights=True
+        )
+        return ''.join([
+            f'<Title id={idx}>{eachResult.title}</Title>'
+            f'<URL id={idx}>{eachResult.url}</URL>'
+            f'<Highlight id={idx}>{"".join(eachResult.highlights)}</Highlight>'
+            for (idx, eachResult) in enumerate(response.results)
+        ])
+search_and_get_contents_tool = ExaSearchTool()
 
 # Define the Researcher Agent
 researcher = Agent(
@@ -27,7 +43,8 @@ researcher = Agent(
     synthesize complex information into actionable insights.""",
     verbose=True,
     allow_delegation=False,
-    tools=[search_tool]
+    tools=[search_and_get_contents_tool],
+    llm=None
 )
 
 class TaskRequest(BaseModel):
@@ -54,7 +71,7 @@ async def run_research_task(request: TaskRequest):
         )
 
         # Execute the crew's task and get the result
-        result = crew.kickoff()
+        result = crew.kickoff(inputs={'topic': request.target, "model": "gemini/gemini-2.5-pro"})
 
         return {"result": result}
 

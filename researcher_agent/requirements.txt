@@ -1,5 +1,8 @@
 fastapi
 uvicorn
 crewai
+crewai-tools
 exa-py
 wandb
+google-generativeai
+litellm
