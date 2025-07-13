@@ -24,6 +24,24 @@
   color: white;
 }
 
+.workflow-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.agent-node {
+  background-color: #61dafb;
+  color: #282c34;
+  padding: 10px 20px;
+  border-radius: 8px;
+  margin: 0 10px;
+}
+
+.arrow {
+  font-size: 2em;
+}
+
 .App-link {
   color: #61dafb;
 }

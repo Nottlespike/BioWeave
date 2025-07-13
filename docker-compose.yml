@@ -5,6 +5,7 @@ services:
       - "8000:8000"
     volumes:
       - ./researcher_agent:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
     environment:
       - EXA_API_KEY=${EXA_API_KEY}
       - WANDB_API_KEY=${WANDB_API_KEY}
@@ -15,12 +16,32 @@ services:
       timeout: 3s
       retries: 2
 
+  drug_proposal_agent:
+    build: ./drug_proposal_agent
+    ports:
+      - "8002:80"
+    volumes:
+      - ./drug_proposal_agent:/app
+    env_file:
+      - .env
+    command: uvicorn main:app --host 0.0.0.0 --port 80
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 10s
+      timeout: 3s
+      retries: 2
+
   orchestrator_agent:
     build: ./orchestrator_agent
     ports:
-      - "8001:8000"
+      - "8001:80"
     volumes:
       - ./orchestrator_agent:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 80
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       researcher_agent:
+        condition: service_healthy
+      drug_proposal_agent:
         condition: service_healthy

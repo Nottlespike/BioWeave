@@ -34,10 +34,22 @@ function App() {
           />
           <button type="submit">Submit</button>
         </form>
+        <div className="workflow-container">
+          <div className="agent-node">User</div>
+          <div className="arrow">→</div>
+          <div className="agent-node">Orchestrator</div>
+          <div className="arrow">→</div>
+          <div className="agent-node">Researcher</div>
+          <div className="arrow">→</div>
+          <div className="agent-node">Drug Proposal</div>
+        </div>
         {response && (
           <div className="response-container">
             <h2>Response:</h2>
-            <pre>{JSON.stringify(response, null, 2)}</pre>
+            <h3>Research Result:</h3>
+            <pre>{JSON.stringify(response.research_result, null, 2)}</pre>
+            <h3>Drug Proposal:</h3>
+            <pre>{JSON.stringify(response.drug_proposal, null, 2)}</pre>
           </div>
         )}
         {error && (

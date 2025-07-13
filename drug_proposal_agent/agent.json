@@ -1,0 +1,31 @@
+{
+    "name": "drug_proposal_agent",
+    "version": "0.1.0",
+    "description": "An agent that interfaces with NVIDIA BioNeMo to generate novel drug candidates.",
+    "endpoints": [
+        {
+            "path": "/v1/tasks",
+            "method": "POST",
+            "description": "Generates a novel molecule based on a masked SMILES string.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "masked_smiles": {
+                        "type": "string",
+                        "description": "A masked SMILES string to be used as a template for generation."
+                    }
+                },
+                "required": ["masked_smiles"]
+            },
+            "output_schema": {
+                "type": "object",
+                "properties": {
+                    "smiles": {
+                        "type": "string",
+                        "description": "The generated SMILES string of the novel molecule."
+                    }
+                }
+            }
+        }
+    ]
+}
